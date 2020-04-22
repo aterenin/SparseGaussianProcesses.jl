@@ -1,0 +1,2 @@
+# SparseGaussianProcesses.jl
+
