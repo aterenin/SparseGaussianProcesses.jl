@@ -2,7 +2,7 @@ import Flux
 using LinearAlgebra
 using Statistics
 import Random.rand!
-import Random.randn!; Flux.@nograd randn! # CuArrays workaround
+import Random.randn!
 
 export SparseGaussianProcess, rand!
 

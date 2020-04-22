@@ -22,5 +22,7 @@ dataset = Iterators.repeated((x,y), 1000)
 
 Flux.train!((x,y) -> loss(gp,x,y)|>sum, params(gp), dataset, opt; cb = throttle(() -> @show(loss(gp,x,y)|>sum), 1))
 
+(gp,x,y) = cpu.((gp,x,y))
+
 plot_gp_intervals(gp, x, y)
 plot_gp_gradients(gp, x)

@@ -13,6 +13,9 @@ mutable struct EuclideanRandomFeatures{A<:AbstractArray{<:Any,3},M<:AbstractMatr
   weights    :: M
 end
 
+Flux.trainable(k::EuclideanRandomFeatures) = ()
+Flux.@functor EuclideanRandomFeatures
+
 function rand!(self::EuclideanRandomFeatures, k::EuclideanKernel, num_features::Integer = size(self.frequency,ndims(self.frequency)))
   (id,od) = k.dims
   Fl = eltype(self.frequency)

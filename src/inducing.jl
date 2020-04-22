@@ -15,6 +15,7 @@ end
 
 Flux.trainable(ip::MarginalInducingPoints) = (ip.location, ip.mean, ip.covariance_triangle)
 Flux.@functor MarginalInducingPoints
+Flux.@functor Cholesky
 
 function MarginalInducingPoints(k::CovarianceKernel, num_inducing::Integer)
   (id,od) = k.dims
