@@ -57,8 +57,7 @@ onfail(f, _::Tuple{Test.Fail,<:Any}) = f()
             rf = EuclideanRandomFeatures(k, l)
             op = IdentityOperator()
 
-            # x = reshape(range(-3,3;length=xd), (id,xd)) |> collect #
-            x = randn(id, xd)
+            x = randn(id, xd); # sort!(x; dims=2)
             w = randn(l,s)
             K = zeros(xd, xd)
 
@@ -92,7 +91,17 @@ onfail(f, _::Tuple{Test.Fail,<:Any}) = f()
       for od in 1:1
         m=10
         k = SquaredExponentialKernel(id)
-        ip = MarginalInducingPoints(k, od, m)
+        ip = MarginalInducingPoints(k, m)
+
+        (z,mu,U,V) = ip()
+
+        @test length(mu) == od*m
+        @test size(U) == (m,m)
+        @test size(V) == (m,m)
+
+        @test isapprox.(mu, 0) |> all
+        @test isapprox(U' * U, k(z,z) + V'*V)
+        @test isapprox(V' * V, (0.00001*I(m)))
         
         x = randn(od, m)
         ip(x,k)
@@ -108,6 +117,21 @@ onfail(f, _::Tuple{Test.Fail,<:Any}) = f()
         @test isapprox.(mu, 0) |> all
         @test isapprox(U' * U, k(z,z) + V'*V)
         @test isapprox(V' * V, (0.00001*I(m)))
+
+        x = randn(od, m+1)
+        ip(x,k)
+
+        (z,mu,U,V) = ip()
+
+        @test size(z) == size(x)
+        @test length(mu) == od*(m+1)
+        @test size(U) == (m+1,m+1)
+        @test size(V) == (m+1,m+1)
+
+        @test isapprox(z, x)
+        @test isapprox.(mu, 0) |> all
+        @test isapprox(U' * U, k(z,z) + V'*V)
+        @test isapprox(V' * V, (0.00001*I(m+1)))
       end
     end
   end
@@ -128,9 +152,7 @@ onfail(f, _::Tuple{Test.Fail,<:Any}) = f()
             k.log_length_scales .= log.(ls)
             gp = SparseGaussianProcess(k)
             gp.prior_basis = EuclideanRandomFeatures(k, l)
-            gp.prior_weights = zeros(l,1)
-            gp.inducing_points = MarginalInducingPoints(k, od, zd)
-            gp.inducing_weights = zeros(zd,1)
+            gp.inducing_points = MarginalInducingPoints(k, zd)
 
             x = 2 .* randn(id,xd); # sort!(x; dims=2)
             z = randn(id,zd)
@@ -151,8 +173,6 @@ onfail(f, _::Tuple{Test.Fail,<:Any}) = f()
 
             mu_x = k(x,z) * (Q \ vec(u))
             K_xx = k(x,x) - k(x,z) * (Q \ k(z,x))
-
-            @test_skip true; @info "Skipping slow GP test"; continue
 
             rand!(gp; num_samples = ns)
             f = gp(x)[1,:,:]
@@ -184,7 +204,7 @@ onfail(f, _::Tuple{Test.Fail,<:Any}) = f()
     k = SquaredExponentialKernel(2)
     gp = SparseGaussianProcess(k)
 
-    @test (SparseGaussianProcesses.prior_KL(gp) .>= 0) |> all
+    @test (SparseGaussianProcesses.prior_KL(gp) .>= -1e-10) |> all
     @test (SparseGaussianProcesses.prior_KL(gp) .<= 1) |> all
 
     gp.inducing_points.mean .= 1
@@ -199,4 +219,8 @@ onfail(f, _::Tuple{Test.Fail,<:Any}) = f()
 
     @test loss(gp,x,y) isa AbstractArray
   end
-end # testset SparseGaussianProcesses
+
+  @testset "gpu" begin
+
+  end
+end

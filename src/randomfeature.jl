@@ -10,6 +10,7 @@ abstract type RandomFeatures end
 mutable struct EuclideanRandomFeatures{A<:AbstractArray{<:Any,3},M<:AbstractMatrix} <: RandomFeatures
   frequency  :: A
   phase      :: M
+  weights    :: M
 end
 
 function rand!(self::EuclideanRandomFeatures, k::EuclideanKernel, num_features::Integer = size(self.frequency,ndims(self.frequency)))
@@ -24,7 +25,8 @@ function EuclideanRandomFeatures(k::EuclideanKernel, num_features::Integer)
   (id,od) = k.dims
   frequency = zeros(id,od,num_features)
   phase = zeros(od,num_features)
-  features = EuclideanRandomFeatures(frequency, phase)
+  weights = zeros(num_features,1)
+  features = EuclideanRandomFeatures(frequency, phase, weights)
   rand!(features, k)
   features
 end

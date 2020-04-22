@@ -4,10 +4,10 @@ export loss
 
 function prior_KL(gp::SparseGaussianProcess{<:Any,<:Any,<:Any,<:Any,<:MarginalInducingPoints})
   (k,B) = (gp.kernel, gp.inter_domain_operator)
-  (z,mu,U,V) = gp.inducing_points()
+  (z,mu,U,V,QC) = gp.inducing_points()
   K = (B*k*B)(z,z)
   Q = K + V'*V
-  UQ = gp.cholesky_cache.U
+  UQ = QC.U
   logdet_term = 2 .* sum(log.(diag(UQ)) .- log.(diag(U)); dims=1)
   invUQ = inv(UQ)
   trace_term = sum((invUQ * invUQ') .* (U' * U); dims=(1,2))

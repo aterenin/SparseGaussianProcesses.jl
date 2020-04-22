@@ -11,8 +11,8 @@ abstract type GaussianProcess end
 function rand!(gp::GaussianProcess; num_samples::Integer = num_samples(gp))
   # sample prior weights
   s = num_samples
-  (l,_) = size(gp.prior_weights)
-  w = randn!(similar(gp.prior_weights, l, s))
+  (l,_) = size(gp.prior_basis.weights)
+  w = randn!(similar(gp.prior_basis.weights, (l, s)))
 
   # build kernel matrix
   (z,mu,U,V) = gp.inducing_points()
@@ -27,15 +27,15 @@ function rand!(gp::GaussianProcess; num_samples::Integer = num_samples(gp))
   f = reshape(gp.prior_basis(z, w, k, B), (dm, s))
   v = mu .+ Q \ (u .- f .- e)
 
-  gp.prior_weights = w
-  gp.inducing_weights = v
-  gp.cholesky_cache = Q
+  gp.prior_basis.weights = w
+  gp.inducing_points.weights = v
+  gp.inducing_points.cholesky_cache = Q
   nothing
 end
 
 function (gp::GaussianProcess)(x::AbstractMatrix)
   (id,n) = size(x)
-  (w,v) = (gp.prior_weights, gp.inducing_weights)
+  (w,v) = (gp.prior_basis.weights, gp.inducing_points.weights)
   (z,_,_,_) = gp.inducing_points()
   (k,A,B) = (gp.kernel, gp.observation_operator, gp.inter_domain_operator)
   s = num_samples(gp)
@@ -53,7 +53,7 @@ function (gp::GaussianProcess)(x::AbstractMatrix)
 end
 
 function num_samples(gp::GaussianProcess)
-  size(gp.inducing_weights, ndims(gp.inducing_weights))
+  size(gp.inducing_points.weights, ndims(gp.inducing_points.weights))
 end
 
 
@@ -64,20 +64,15 @@ mutable struct SparseGaussianProcess{
     IO<:InterDomainOperator,
     RF<:RandomFeatures,
     IP<:InducingPoints,
-    M<:AbstractMatrix,
     V<:AbstractVector,
-    C<:Cholesky,
     H<:Hyperprior
     } <: GaussianProcess
   kernel                :: K
   observation_operator  :: OO
   inter_domain_operator :: IO
   prior_basis           :: RF
-  prior_weights         :: M
   inducing_points       :: IP
-  inducing_weights      :: M
   log_error             :: V
-  cholesky_cache        :: C
   hyperprior            :: NamedTuple{(:log_error,), Tuple{H}}
 end
 
@@ -89,13 +84,10 @@ function SparseGaussianProcess(k::CovarianceKernel)
   oo = IdentityOperator()
   io = IdentityOperator()
   pb = EuclideanRandomFeatures(k, 64)
-  pw = zeros(64,1)
-  db = MarginalInducingPoints(k, od, 10)
-  dw = zeros(10,1)
+  db = MarginalInducingPoints(io*k*io, 10)
   le = zeros(1)
-  cc = k(db.location, db.location)|>cholesky
   hp = (log_error = NormalHyperprior([0.],[1.]),)
-  SparseGaussianProcess(k,oo,io,pb,pw,db,dw,le,cc,hp)
+  SparseGaussianProcess(k,oo,io,pb,db,le,hp)
 end
 
 # function SPGaussianProcess(k::K; m::Integer = 10, l::Integer = 64) where K<:Kernel{Fl,D} where {Fl<:AbstractFloat, D}
