@@ -15,21 +15,24 @@ function MarginalInducingPoints(k::CovarianceKernel, dim::Integer, num_inducing:
   mean = zeros(dim*num_inducing)
   covariance_triangle = zeros(dim*num_inducing, dim*num_inducing)
   log_jitter = log.([0.00001])./2
-  MarginalInducingPoints(location, mean, covariance_triangle, log_jitter)
+  ip = MarginalInducingPoints(location, mean, covariance_triangle, log_jitter)
+  ip(location, k)
+  ip
 end
 
 function (self::MarginalInducingPoints)(z::AbstractMatrix, k::Kernel)
   self.location = z
   self.mean .*= 0
   K = k(self.location,self.location)
-  self.covariance_triangle .= cholesky(K).U
+  D = Diagonal(I(size(K,1)) * exp.(self.log_jitter .* 2))
+  self.covariance_triangle .= cholesky(K .+ D).U
   self.covariance_triangle[diagind(self.covariance_triangle)] .= log.(diag(self.covariance_triangle))
   nothing
 end
 
 function (self::MarginalInducingPoints)()
   U = UnitUpperTriangular(self.covariance_triangle) - I + Diagonal(exp.(diag(self.covariance_triangle)))
-  D = Diagonal(I(size(self.covariance_triangle,1)) .* exp.(self.log_jitter))
+  D = Diagonal(I(size(self.covariance_triangle,1)) * exp.(self.log_jitter))
   (self.location, self.mean, U, D)
 end
 

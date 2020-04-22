@@ -8,9 +8,9 @@ include("kernel.jl")
 include("randomfeature.jl")
 include("inducing.jl")
 include("gp.jl")
-# include("loss.jl")
+include("loss.jl")
 
-# include("utils.jl")
+include("utils.jl")
 # include("gpu.jl")
 
 function __init__()

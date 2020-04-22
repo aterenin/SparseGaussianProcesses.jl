@@ -106,7 +106,7 @@ onfail(f, _::Tuple{Test.Fail,<:Any}) = f()
 
         @test isapprox(z, x)
         @test isapprox.(mu, 0) |> all
-        @test isapprox(U' * U, k(z,z))
+        @test isapprox(U' * U, k(z,z) + V'*V)
         @test isapprox(V' * V, (0.00001*I(m)))
       end
     end
@@ -152,7 +152,7 @@ onfail(f, _::Tuple{Test.Fail,<:Any}) = f()
             mu_x = k(x,z) * (Q \ vec(u))
             K_xx = k(x,x) - k(x,z) * (Q \ k(z,x))
 
-            # @test_skip true; @info "Skipping slow GP test"; continue
+            @test_skip true; @info "Skipping slow GP test"; continue
 
             rand!(gp; num_samples = ns)
             f = gp(x)[1,:,:]
@@ -181,7 +181,22 @@ onfail(f, _::Tuple{Test.Fail,<:Any}) = f()
   end
 
   @testset "loss" begin
-    
+    k = SquaredExponentialKernel(2)
+    gp = SparseGaussianProcess(k)
+
+    @test (SparseGaussianProcesses.prior_KL(gp) .>= 0) |> all
+    @test (SparseGaussianProcesses.prior_KL(gp) .<= 1) |> all
+
+    gp.inducing_points.mean .= 1
+    @test (SparseGaussianProcesses.prior_KL(gp) .>= 1) |> all
+
+    gp.inducing_points.mean .= 0
+    gp.inducing_points.covariance_triangle .= 0
+    @test (SparseGaussianProcesses.prior_KL(gp) .>= 1) |> all
+
+    x = randn(1,128)
+    y = randn(1,128)
+
+    @test loss(gp,x,y) isa AbstractArray
   end
-  
 end # testset SparseGaussianProcesses
