@@ -218,6 +218,14 @@ onfail(f, _::Tuple{Test.Fail,<:Any}) = f()
     y = randn(1,128)
 
     @test loss(gp,x,y) isa AbstractArray
+
+    import Flux.gradient
+    import Flux.params
+
+    g = gradient(() -> loss(gp,x,y)|>sum, params(gp))
+    for p in params(gp)
+      @test isfinite.(g[p]) |> all
+    end
   end
 
   @testset "gpu" begin

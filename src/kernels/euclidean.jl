@@ -21,7 +21,7 @@ struct SquaredExponentialKernel{V<:AbstractVector,H<:Hyperprior} <: EuclideanKer
   hyperprior        :: NamedTuple{(:log_variance, :log_length_scales), Tuple{H,H}}
 end
 
-# Flux.functor(k::SquaredExponentialKernel{Fl,D,V}) where {Fl,D,V} = ((log_variance = k.log_variance, log_length_scales = k.log_length_scales, hyperprior = k.hyperprior), x->SquaredExponentialKernel{eltype(x[1]),D,typeof(x[1])}(x[1],x[2],x[3]))
+Flux.@functor SquaredExponentialKernel
 
 function SquaredExponentialKernel(dim::Integer)
   dims = (dim, 1)

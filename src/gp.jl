@@ -2,7 +2,7 @@ import Flux
 using LinearAlgebra
 using Statistics
 import Random.rand!
-import Random.randn!
+import Random.randn!; Flux.@nograd randn! # CuArrays workaround
 
 export SparseGaussianProcess, rand!
 
@@ -76,7 +76,6 @@ mutable struct SparseGaussianProcess{
   hyperprior            :: NamedTuple{(:log_error,), Tuple{H}}
 end
 
-Flux.trainable(gp::SparseGaussianProcess) = ()
 Flux.@functor SparseGaussianProcess
 
 function SparseGaussianProcess(k::CovarianceKernel)

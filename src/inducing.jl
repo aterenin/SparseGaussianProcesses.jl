@@ -13,6 +13,9 @@ mutable struct MarginalInducingPoints{V<:AbstractVector, M<:AbstractMatrix, C<:C
   cholesky_cache      :: C
 end
 
+Flux.trainable(ip::MarginalInducingPoints) = (ip.location, ip.mean, ip.covariance_triangle)
+Flux.@functor MarginalInducingPoints
+
 function MarginalInducingPoints(k::CovarianceKernel, num_inducing::Integer)
   (id,od) = k.dims
   location = randn(id, num_inducing)
@@ -42,8 +45,9 @@ function (self::MarginalInducingPoints)(z::AbstractMatrix, k::Kernel)
 end
 
 function (self::MarginalInducingPoints)()
-  U = UnitUpperTriangular(self.covariance_triangle) - I + Diagonal(exp.(diag(self.covariance_triangle)))
-  D = Diagonal(I(size(self.covariance_triangle,1)) * exp.(self.log_jitter))
+  ones = (randn!(similar(self.log_jitter, (size(self.covariance_triangle,1)))) .* 0.0f0 .+ 1.0f0) # HACK: suppress autodiff unsupported mutation error without NaNs
+  U = UnitUpperTriangular(self.covariance_triangle) + Diagonal(exp.(diag(self.covariance_triangle)) .- ones)
+  D = Diagonal(ones .* exp.(self.log_jitter))
   (self.location, self.mean, U, D, self.cholesky_cache)
 end
 

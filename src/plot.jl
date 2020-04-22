@@ -16,7 +16,7 @@ function plot_gp_intervals(gp::GaussianProcess, x::AbstractMatrix, y::Union{Abst
 
   p = pl.plot(size=(800,600))
 
-  y isa Nothing ? () : pl.scatter!(p, x_d, y, label=nothing)
+  y isa Nothing ? () : pl.scatter!(p, x_d, y[output_dim,:], label=nothing)
   pl.plot!(p, x_d, m, ribbon = (abs.(l.-m),abs.(u.-m)), label=nothing)
   for i in 1:n_samples
     pl.plot!(p, x_d, f[:,i], color=:gray, label=nothing)
