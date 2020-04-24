@@ -2,7 +2,7 @@ using Flux; Flux.CuArrays.allowscalar(false)
 using Flux: params, throttle, Optimise.@epochs
 if isdefined(@__MODULE__,:LanguageServer) include("../src/SparseGaussianProcesses.jl"); using .SparseGaussianProcesses; end
 using SparseGaussianProcesses
-# import Plots
+import Plots
 
 gp = SparseGaussianProcess(SquaredExponentialKernel(1))
 
@@ -17,7 +17,7 @@ rand!(gp.prior_basis, gp.kernel)
 rand!(gp; num_samples=16)
 loss(gp,x,y)
 
-opt = ADAM(0.001)
+opt = ADAM()
 dataset = Iterators.repeated((x,y), 1000)
 
 Flux.train!((x,y) -> loss(gp,x,y)|>sum, params(gp), dataset, opt; cb = throttle(() -> @show(loss(gp,x,y)|>sum), 1))
@@ -25,4 +25,3 @@ Flux.train!((x,y) -> loss(gp,x,y)|>sum, params(gp), dataset, opt; cb = throttle(
 (gp,x,y) = cpu.((gp,x,y))
 
 plot_gp_intervals(gp, x, y)
-plot_gp_gradients(gp, x)

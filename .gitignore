@@ -1,3 +1,4 @@
 .DS_Store
-Manifest.toml
 *.code-workspace
+Manifest.toml
+docs/build/
