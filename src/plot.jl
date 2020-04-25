@@ -1,8 +1,16 @@
 using Statistics
 import .Plots; const pl = Plots
 
-export plot_gp_intervals #, plot_gp_gradients, plot_gp_vector_field, plot_gp_phase_space
+export plot_gp_intervals
 
+"""
+    plot_gp_intervals(gp::GaussianProcess, x::AbstractMatrix, y::Union{AbstractMatrix,Nothing} = nothing; input_dim = 1, output_dim = 1)
+
+Creates a simple 95% uncertainty interval plot for the GP at a set of
+ordered data points ``\\boldsymbol{x}``. Optionally also plots a set of 
+data points ``\\boldsymbol{y}``. For multivariateand vector GPs, 
+plots the dimensions specified by `input_dim` and `output_dim`.
+"""
 function plot_gp_intervals(gp::GaussianProcess, x::AbstractMatrix, y::Union{AbstractMatrix,Nothing} = nothing; input_dim = 1, output_dim = 1)
   f = gp(x)[output_dim,:,:]
   n_samples = min(size(f,ndims(f)),32)

@@ -2,6 +2,16 @@ using LinearAlgebra
 
 export loss
 
+"""
+    prior_KL(gp::SparseGaussianProcess{<:Any,<:Any,<:Any,<:Any,<:MarginalInducingPoints})
+
+Computes the prior Kullback-Leibler divergence for a Gaussian process 
+with marginal inducing points, given by the expression
+
+``KL(q(\\boldsymbol{u}) \\mathbin{||} p(\\boldsymbol{u})) = \\frac{1}{2} \\left( \\ln\\frac{|\\mathbf{K}_{\\boldsymbol{z}\\boldsymbol{z}}|}{|\\mathbf\\Sigma|} + \\operatorname{tr}(\\mathbf{K}_{\\boldsymbol{z}\\boldsymbol{z}}^{-1}\\mathbf\\Sigma) + \\boldsymbol\\mu^T \\mathbf{K}_{\\boldsymbol{z}\\boldsymbol{z}} \\boldsymbol\\mu \\right)``
+
+where the mean is re-parameterized according to ``\\boldsymbol\\mu = \\mathbb{E}( (\\mathbf{K}_{\\boldsymbol{z}\\boldsymbol{z}} + \\xi\\mathbf{I})^{-1} \\boldsymbol{u} )``.
+"""
 function prior_KL(gp::SparseGaussianProcess{<:Any,<:Any,<:Any,<:Any,<:MarginalInducingPoints})
   (k,B) = (gp.kernel, gp.inter_domain_operator)
   (z,mu,U,V,QC) = gp.inducing_points()
@@ -15,7 +25,14 @@ function prior_KL(gp::SparseGaussianProcess{<:Any,<:Any,<:Any,<:Any,<:MarginalIn
   (logdet_term .- length(mu) .+ trace_term .+ reparameterized_quadratic_form_term) ./ 2
 end
 
-function loss(gp::GaussianProcess, x::AbstractMatrix, y::AbstractMatrix; n_data::Integer = size(x,ndims(x)))
+"""
+    loss(gp::GaussianProcess, x::AbstractMatrix, y::AbstractMatrix; n_data::Int = size(x,ndims(x)))
+
+Computes the Kullback-Leibler divergence of the variational family
+from the posterior Gaussian process, up to an additive constant.
+Minimizing this function trains the Gaussian process.
+"""
+function loss(gp::GaussianProcess, x::AbstractMatrix, y::AbstractMatrix; n_data::Int = size(x,ndims(x)))
   # sample the GP
   # rand!(gp.prior_basis)
   rand!(gp)

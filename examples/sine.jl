@@ -1,6 +1,5 @@
 using Flux; Flux.CuArrays.allowscalar(false)
 using Flux: params, throttle, Optimise.@epochs
-if isdefined(@__MODULE__,:LanguageServer) include("../src/SparseGaussianProcesses.jl"); using .SparseGaussianProcesses; end
 using SparseGaussianProcesses
 import Plots
 

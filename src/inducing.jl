@@ -2,8 +2,19 @@ using LinearAlgebra
 
 export MarginalInducingPoints
 
+"""
+    InducingPoints
+
+An abstract set of inducing points.
+"""
 abstract type InducingPoints end
   
+"""
+    MarginalInducingPoints
+
+A set of inducing points representing the marginal value of the 
+Gaussian process ``\\boldsymbol{u} = (\\mathcal{B}g)(\\boldsymbol{z})``.
+"""
 mutable struct MarginalInducingPoints{V<:AbstractVector, M<:AbstractMatrix, C<:Cholesky} <: InducingPoints
   location            :: M
   mean                :: V
@@ -17,7 +28,12 @@ Flux.trainable(ip::MarginalInducingPoints) = (ip.location, ip.mean, ip.covarianc
 Flux.@functor MarginalInducingPoints
 Flux.@functor Cholesky
 
-function MarginalInducingPoints(k::CovarianceKernel, num_inducing::Integer)
+"""
+    MarginalInducingPoints(k::CovarianceKernel, num_inducing::Integer)
+
+Creates a set of marginal inducing points with covariance kernel ``k`` of ``\\boldsymbol{u}``.
+"""
+function MarginalInducingPoints(k::CovarianceKernel, num_inducing::Int)
   (id,od) = k.dims
   location = randn(id, num_inducing)
   mean = zeros(od*num_inducing)
@@ -30,6 +46,12 @@ function MarginalInducingPoints(k::CovarianceKernel, num_inducing::Integer)
   ip
 end
 
+"""
+    (self::MarginalInducingPoints)(z::AbstractMatrix, k::Kernel)
+
+Sets the inducing locations of ``\\boldsymbol{u}`` to ``\\boldsymbol{z}``, inducing
+mean to zero, and inducing covariance to ``k(\\boldsymbol{z},\\boldsymbol{z})``.
+"""
 function (self::MarginalInducingPoints)(z::AbstractMatrix, k::Kernel)
   (id,od) = k.dims
   n_inducing = size(z,ndims(z))
@@ -45,6 +67,13 @@ function (self::MarginalInducingPoints)(z::AbstractMatrix, k::Kernel)
   nothing
 end
 
+"""
+    (self::MarginalInducingPoints)()
+
+Assembles the inducing covariance into upper-triangular form, with diagonal values
+exponentiated to ensure they are positive. Returns inducing locations, inducing mean,
+jitter covariance, and inducing covariance.
+"""
 function (self::MarginalInducingPoints)()
   ones = (randn!(similar(self.log_jitter, (size(self.covariance_triangle,1)))) .* 0.0f0 .+ 1.0f0) # HACK: suppress autodiff unsupported mutation error without NaNs
   U = UnitUpperTriangular(self.covariance_triangle) + Diagonal(exp.(diag(self.covariance_triangle)) .- ones)
@@ -53,6 +82,11 @@ function (self::MarginalInducingPoints)()
 end
 
 
+"""
+    PseudoDataInducingPoints
+
+A set of inducing points representing pseudo-data points with diagonal non-constant error covariance.
+"""
 mutable struct PseudoDataInducingPoints{V<:AbstractVector,M<:AbstractMatrix,C<:Cholesky} <: InducingPoints
   location                :: M
   mean                    :: V
@@ -61,7 +95,12 @@ mutable struct PseudoDataInducingPoints{V<:AbstractVector,M<:AbstractMatrix,C<:C
   cholesky_cache          :: C
 end
 
-function PseudoDataInducingPoints(k::Kernel, dim::Integer, num_inducing::Integer)
+"""
+    PseudoDataInducingPoints(k::Kernel, dim::Int, num_inducing::Int)
+
+Creates a set of pseudo-data inducing points with unit error variance.
+"""
+function PseudoDataInducingPoints(k::Kernel, dim::Int, num_inducing::Int)
   (id,od) = k.dims
   location = randn(id, num_inducing)
   mean = zeros(dim*num_inducing)
@@ -71,6 +110,12 @@ function PseudoDataInducingPoints(k::Kernel, dim::Integer, num_inducing::Integer
   PseudoDataInducingPoints(location, mean, log_covariance_diagonal, weights, cholesky_cache)
 end
 
+"""
+    (self::PseudoDataInducingPoints)(z::AbstractMatrix, k::Kernel)
+
+Sets the inducing locations of ``\\boldsymbol{u}`` to ``\\boldsymbol{z}``, inducing
+mean to zero, and inducing error variance to one for each pseudo-data point.
+"""
 function (self::PseudoDataInducingPoints)(z::AbstractMatrix, k::Kernel)
   (id,od) = k.dims
   n_inducing = size(z,ndims(z))
@@ -82,6 +127,12 @@ function (self::PseudoDataInducingPoints)(z::AbstractMatrix, k::Kernel)
   nothing
 end
 
+"""
+    (self::PseudoDataInducingPoints)()
+
+Assembles the pseudo-data inducing error variance into matrix form. Returns 
+inducing locations, inducing mean, `nothing` jitter term, and inducing error variance.
+"""
 function (self::PseudoDataInducingPoints)()
   D = Diagonal(exp.(self.log_covariance_diagonal))
   (self.location, self.mean, nothing, D)

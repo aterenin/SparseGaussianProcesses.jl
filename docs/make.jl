@@ -5,8 +5,7 @@ makedocs(
   modules = [SparseGaussianProcesses],
   pages = [
     "Home"=>"index.md",
-    "API" => "api.md"
-  ]
-  )
+    "API"=>"api.md"
+  ])
 
 deploydocs(repo = "github.com/aterenin/SparseGaussianProcesses.jl.git")

@@ -41,6 +41,7 @@ onfail(f, _::Tuple{Test.Fail,<:Any}) = f()
   end
 
   @testset "randomfeature" begin
+    first_test = true
     for id in 1:2
       for od in 1:1
         scales = [0.1,1.,5.]
@@ -58,16 +59,16 @@ onfail(f, _::Tuple{Test.Fail,<:Any}) = f()
             op = IdentityOperator()
 
             x = randn(id, xd); # sort!(x; dims=2)
-            w = randn(l,s)
+            rf.weights = randn(l,s)
             K = zeros(xd, xd)
 
-            @test size(rf(x,w,k,op)) == (1,xd,s)
+            @test size(rf(x,k,op)) == (1,xd,s)
 
-            @test_skip true; @info "Skipping slow RFF test"; continue
+            first_test ? first_test = false : begin @test_skip true; @info "Skipping slow RFF test"; continue end
 
             @showprogress for i in 1:t
-              w = randn(l,s)
-              out = rf(x,w,k,op)
+              rf.weights = randn(l,s)
+              out = rf(x,k,op)
               K .+= cov(reshape(out, (xd,s))')
             end
             K ./= t
