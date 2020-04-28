@@ -4,20 +4,12 @@ using TensorCast
 export EuclideanRandomFeatures
 
 """
-    RandomFeatures
-
-An abstract set of random features with associated basis weights.
-"""
-abstract type RandomFeatures end
-
-
-"""
     EuclideanRandomFeatures
 
 A set of Euclidean random features, parameterized by frequency and phase,
 together with a set of associated basis weights.
 """
-mutable struct EuclideanRandomFeatures{A<:AbstractArray{<:Any,3},M<:AbstractMatrix} <: RandomFeatures
+mutable struct EuclideanRandomFeatures{A<:AbstractArray{<:Any,3},M<:AbstractMatrix} <: PriorBasis
   frequency  :: A
   phase      :: M
   weights    :: M

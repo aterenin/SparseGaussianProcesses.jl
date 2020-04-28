@@ -5,7 +5,7 @@ using Requires
 # include("transform.jl")
 include("hyperprior.jl")
 include("kernel.jl")
-include("randomfeature.jl")
+include("prior_basis.jl")
 include("inducing.jl")
 include("gp.jl")
 include("loss.jl")

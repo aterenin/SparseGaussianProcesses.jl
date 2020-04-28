@@ -34,6 +34,7 @@ function pairwise_column_difference(x::AbstractMatrix, y::AbstractMatrix)
 end
 
 include("kernels/euclidean.jl")
+include("kernels/manifold.jl")
 
 
 """

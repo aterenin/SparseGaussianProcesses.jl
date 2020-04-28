@@ -103,7 +103,7 @@ mutable struct SparseGaussianProcess{
     K<:CovarianceKernel,
     OO<:InterDomainOperator,
     IO<:InterDomainOperator,
-    RF<:RandomFeatures,
+    PB<:PriorBasis,
     IP<:InducingPoints,
     V<:AbstractVector,
     H<:Hyperprior
@@ -111,7 +111,7 @@ mutable struct SparseGaussianProcess{
   kernel                :: K
   observation_operator  :: OO
   inter_domain_operator :: IO
-  prior_basis           :: RF
+  prior_basis           :: PB
   inducing_points       :: IP
   log_error             :: V
   hyperprior            :: NamedTuple{(:log_error,), Tuple{H}}

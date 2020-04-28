@@ -40,7 +40,7 @@ onfail(f, _::Tuple{Test.Fail,<:Any}) = f()
     end
   end
 
-  @testset "randomfeature" begin
+  @testset "prior_basis" begin
     first_test = true
     for id in 1:2
       for od in 1:1
