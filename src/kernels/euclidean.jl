@@ -23,10 +23,11 @@ Flux.trainable(k::EuclideanKernel) = (k.log_length_scales,k.log_variance)
 
 A squared exponential kernel
 
-``k(\\boldsymbol{x},\\boldsymbol{y}) = \\sigma^2\\exp\\left( -\\left\\lVert\\frac{\\boldsymbol{x} - \\boldsymbol{y}}{\\boldsymbol\\kappa} \\right\\rVert^2 \\right)
+``k(x,x') = \\sigma^2\\exp\\left( -\\left\\lVert\\frac{x - x'}{\\kappa} 
+                                                     \\right\\rVert^2 \\right)``
 
 parameterized by log-variance ``\\ln(\\sigma^2)`` (trainable by default) and
-log-length-scales ``\\ln(\\boldsymbol\\kappa)`` (trainable by default) applied 
+log-length-scales ``\\ln(\\kappa)`` (trainable by default) applied 
 element-wise to each dimension.
 """
 struct SquaredExponentialKernel{V<:AbstractVector,H<:Hyperprior} <: EuclideanKernel
@@ -68,8 +69,8 @@ end
 """
     spectral_distribution(k::SquaredExponentialKernel, n::Integer = 1)
 
-Draws `n` samples from the spectral distribution of a standard squared exponential
-kernel, which is multivariate Gaussian with covariance ``2\\mathbf{I}``.
+Draws `n` samples from the spectral distribution of a standard squared 
+exponential kernel, which is multivariate Gaussian with covariance ``2 I``.
 """
 function spectral_distribution(k::SquaredExponentialKernel, n::Integer = 1)
   Fl = eltype(k.log_variance)

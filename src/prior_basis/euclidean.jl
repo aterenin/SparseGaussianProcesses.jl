@@ -19,7 +19,8 @@ Flux.trainable(k::EuclideanRandomFeatures) = ()
 Flux.@functor EuclideanRandomFeatures
 
 """
-    rand!(self::EuclideanRandomFeatures, k::EuclideanKernel, num_features::Int = size(self.frequency,ndims(self.frequency)))
+    rand!(self::EuclideanRandomFeatures, k::EuclideanKernel, 
+          num_features::Int = size(self.frequency,ndims(self.frequency)))
 
 Draw a new set of random features, by randomly sampling a new frequencies
 from the spectral measure, and new phases uniformly from ``(0, 2\\pi)``.
@@ -38,7 +39,8 @@ end
 """
     EuclideanRandomFeatures(k::EuclideanKernel, num_features::Int)
 
-Create a set of Euclidean random features with spectral distribution given by ``k``.
+Create a set of Euclidean random features with eigenvalues given by the 
+spectral distribution given by ``k``.
 """
 function EuclideanRandomFeatures(k::EuclideanKernel, num_features::Int)
   (id,od) = k.dims
@@ -51,10 +53,12 @@ function EuclideanRandomFeatures(k::EuclideanKernel, num_features::Int)
 end
 
 """
-    (self::EuclideanRandomFeatures)(x::AbstractMatrix, w::AbstractMatrix, k::EuclideanKernel, op::IdentityOperator)
+    (self::EuclideanRandomFeatures)(x::AbstractMatrix, w::AbstractMatrix, 
+                                    k::EuclideanKernel, op::IdentityOperator)
 
-Evaluate the ``(\\mathcal{A}g)(\\boldsymbol{x})`` where ``g`` is a Gaussian process with kernel ``k``,
-``\\mathcal{A}`` is an inter-domain operator, and ``\\boldsymbol{x}`` is the data, using the random features.
+Evaluate the ``(\\mathcal{A} g)(x)`` where ``g`` is a Gaussian process with 
+kernel ``k``, ``\\mathcal{A}`` is an inter-domain operator, and ``x`` is the 
+data, using the random features.
 """
 function (self::EuclideanRandomFeatures)(x::AbstractMatrix, k::EuclideanKernel, op::IdentityOperator)
   Fl = eltype(self.frequency)

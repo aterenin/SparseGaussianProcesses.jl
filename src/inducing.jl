@@ -13,7 +13,7 @@ abstract type InducingPoints end
     MarginalInducingPoints
 
 A set of inducing points representing the marginal value of the 
-Gaussian process ``\\boldsymbol{u} = (\\mathcal{B}g)(\\boldsymbol{z})``.
+Gaussian process ``u = (\\mathcal{B} g)(z)``.
 """
 mutable struct MarginalInducingPoints{V<:AbstractVector, M<:AbstractMatrix, C<:Cholesky} <: InducingPoints
   location            :: M
@@ -31,7 +31,7 @@ Flux.@functor Cholesky
 """
     MarginalInducingPoints(k::CovarianceKernel, num_inducing::Integer)
 
-Creates a set of marginal inducing points with covariance kernel ``k`` of ``\\boldsymbol{u}``.
+Creates a set of marginal inducing points with covariance kernel ``k`` of ``u``.
 """
 function MarginalInducingPoints(k::CovarianceKernel, num_inducing::Int)
   (id,od) = k.dims
@@ -49,8 +49,8 @@ end
 """
     (self::MarginalInducingPoints)(z::AbstractMatrix, k::Kernel)
 
-Sets the inducing locations of ``\\boldsymbol{u}`` to ``\\boldsymbol{z}``, inducing
-mean to zero, and inducing covariance to ``k(\\boldsymbol{z},\\boldsymbol{z})``.
+Sets the inducing locations of ``u`` to ``z``, inducing mean to zero, and
+inducing covariance to ``k(z,z)``.
 """
 function (self::MarginalInducingPoints)(z::AbstractMatrix, k::Kernel)
   (id,od) = k.dims
@@ -70,9 +70,9 @@ end
 """
     (self::MarginalInducingPoints)()
 
-Assembles the inducing covariance into upper-triangular form, with diagonal values
-exponentiated to ensure they are positive. Returns inducing locations, inducing mean,
-jitter covariance, and inducing covariance.
+Assembles the inducing covariance into upper-triangular form, with diagonal 
+values exponentiated to ensure they are positive. Returns inducing locations, 
+inducing mean, jitter covariance, and inducing covariance.
 """
 function (self::MarginalInducingPoints)()
   ones = (randn!(similar(self.log_jitter, (size(self.covariance_triangle,1)))) .* 0.0f0 .+ 1.0f0) # HACK: suppress autodiff unsupported mutation error without NaNs
@@ -85,7 +85,8 @@ end
 """
     PseudoDataInducingPoints
 
-A set of inducing points representing pseudo-data points with diagonal non-constant error covariance.
+A set of inducing points representing pseudo-data points with diagonal 
+non-constant error covariance.
 """
 mutable struct PseudoDataInducingPoints{V<:AbstractVector,M<:AbstractMatrix,C<:Cholesky} <: InducingPoints
   location                :: M
@@ -113,8 +114,8 @@ end
 """
     (self::PseudoDataInducingPoints)(z::AbstractMatrix, k::Kernel)
 
-Sets the inducing locations of ``\\boldsymbol{u}`` to ``\\boldsymbol{z}``, inducing
-mean to zero, and inducing error variance to one for each pseudo-data point.
+Sets the inducing locations of ``u`` to ``z``, inducing mean to zero, and 
+inducing error variance to one for each pseudo-data point.
 """
 function (self::PseudoDataInducingPoints)(z::AbstractMatrix, k::Kernel)
   (id,od) = k.dims
@@ -131,7 +132,8 @@ end
     (self::PseudoDataInducingPoints)()
 
 Assembles the pseudo-data inducing error variance into matrix form. Returns 
-inducing locations, inducing mean, `nothing` jitter term, and inducing error variance.
+inducing locations, inducing mean, `nothing` jitter term, and inducing error 
+variance.
 """
 function (self::PseudoDataInducingPoints)()
   D = Diagonal(exp.(self.log_covariance_diagonal))

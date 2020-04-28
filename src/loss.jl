@@ -3,14 +3,19 @@ using LinearAlgebra
 export loss
 
 """
-    prior_KL(gp::SparseGaussianProcess{<:Any,<:Any,<:Any,<:Any,<:MarginalInducingPoints})
+    prior_KL(gp::SparseGaussianProcess{<:Any,<:Any,<:Any, <:Any,
+                                       <:MarginalInducingPoints})
 
-Computes the prior Kullback-Leibler divergence for a Gaussian process 
-with marginal inducing points, given by the expression
+Computes the prior Kullback-Leibler divergence for a Gaussian process with
+marginal inducing points, given by the expression
 
-``KL(q(\\boldsymbol{u}) \\mathbin{||} p(\\boldsymbol{u})) = \\frac{1}{2} \\left( \\ln\\frac{|\\mathbf{K}_{\\boldsymbol{z}\\boldsymbol{z}}|}{|\\mathbf\\Sigma|} + \\operatorname{tr}(\\mathbf{K}_{\\boldsymbol{z}\\boldsymbol{z}}^{-1}\\mathbf\\Sigma) + \\boldsymbol\\mu^T \\mathbf{K}_{\\boldsymbol{z}\\boldsymbol{z}} \\boldsymbol\\mu \\right)``
+``KL(q(u) \\mathbin{||} p(u)) = \\frac{1}{2} \\left( 
+                                              \\ln\\frac{|K_{zz}|}{|\\Sigma|} + 
+                                              tr(K_{zz}^{-1}\\Sigma) + 
+                                              \\mu^T K_{zz} \\mu \\right)``
 
-where the mean is re-parameterized according to ``\\boldsymbol\\mu = \\mathbb{E}( (\\mathbf{K}_{\\boldsymbol{z}\\boldsymbol{z}} + \\xi\\mathbf{I})^{-1} \\boldsymbol{u} )``.
+where the mean is re-parameterized according to 
+``\\mu = \\mathbb{E}( (K_{zz} + \\xi I)^{-1} u )``.
 """
 function prior_KL(gp::SparseGaussianProcess{<:Any,<:Any,<:Any,<:Any,<:MarginalInducingPoints})
   (k,B) = (gp.kernel, gp.inter_domain_operator)
@@ -26,11 +31,12 @@ function prior_KL(gp::SparseGaussianProcess{<:Any,<:Any,<:Any,<:Any,<:MarginalIn
 end
 
 """
-    loss(gp::GaussianProcess, x::AbstractMatrix, y::AbstractMatrix; n_data::Int = size(x,ndims(x)))
+    loss(gp::GaussianProcess, x::AbstractMatrix, y::AbstractMatrix; 
+                                                 n_data::Int = size(x,ndims(x)))
 
-Computes the Kullback-Leibler divergence of the variational family
-from the posterior Gaussian process, up to an additive constant.
-Minimizing this function trains the Gaussian process.
+Computes the Kullback-Leibler divergence of the variational family from the 
+posterior Gaussian process, up to an additive constant. Minimizing this 
+function trains the Gaussian process.
 """
 function loss(gp::GaussianProcess, x::AbstractMatrix, y::AbstractMatrix; n_data::Int = size(x,ndims(x)))
   # sample the GP

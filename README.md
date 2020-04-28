@@ -19,7 +19,7 @@
 This package implements sparse Gaussian processes models using doubly stochastic variational inference.
 
 Unlike essentially all other Gaussian process packages, SparseGaussianProcesses.jl does *not* work with means and covariances.
-Instead, it uses the [path-wise sampling technique](https://arxiv.org/abs/2002.09309) to implement ***entire function draws*** from Gaussian process posteriors, which can be evaluated deterministically at arbitrary locations once sampled.
+Instead, it uses the [path-wise sampling technique](https://arxiv.org/abs/2002.09309) to implement *entire function draws* from Gaussian process posteriors, which can be evaluated deterministically at arbitrary locations once sampled.
 
 It supports models of the form
 
@@ -44,6 +44,10 @@ The following features are planned for this package.
 ## Examples
 
 A set of examples are available in the `examples/` folder.
+
+## Contributing
+
+This package is under development, and contributions are welcome! The best way to get in touch regarding development is on the [Julia slack](https://julialang.slack.com/).
 
 ## Citing
 

@@ -86,16 +86,20 @@ end
 A sparse Gaussian process, with kernel `kernel`.
 It supports models of the form
 
-``(f \\mathbin{|} \\boldsymbol{u})(\\cdot) = (\\mathcal{A}g)(\\cdot) + \\mathbf{K}_{(\\cdot)z} (\\mathbf{K}_{zz} + \\mathbf\\Lambda)^{-1} (\\boldsymbol{u} - (\\mathcal{B}g)(\\boldsymbol{z}) - \\boldsymbol\\epsilon)``
+``(f | u)(\\cdot) = (\\mathcal{A} g)(\\cdot) + K_{(\\cdot)z} 
+                (K_{zz} + \\Lambda)^{-1} (u - (\\mathcal{B} g)(z) - \\epsilon)``
 
-where ``g\\sim\\operatorname{GP}(0, k)``, ``\\boldsymbol{u}\\sim\\operatorname{N}(\\boldsymbol\\mu, \\mathbf\\Sigma)``, ``\\boldsymbol\\epsilon\\sim\\operatorname{N}(\\boldsymbol{0}, \\mathbf\\Lambda)``, and ``\\mathcal{A}``, ``\\mathcal{B}`` are inter-domain operators.
+where ``g \\sim GP(0, k)``, ``u \\sim N(\\mu, \\Sigma)``, 
+``\\epsilon \\sim N(0, \\Lambda)``, and ``\\mathcal{A}``, ``\\mathcal{B}`` 
+are inter-domain operators.
 
 # Fields
 - `kernel`: the kernel ``k`` of ``g``.
 - `observation_operator`: the observation operator ``\\mathcal{A}``.
 - `inter_domain_operator`: the inter-domain operator ``\\mathcal{B}``.
 - `prior_basis`: the basis and weights used for efficiently sampling the prior.
-- `inducing_points`: the basis and weights used for sampling the data-dependent portion of the GP.
+- `inducing_points`: the basis and weights used for sampling the data-dependent 
+  portion of the GP.
 - `log_error`: the error variance (log-scale, trainable by default).
 - `hyperprior`: the hyperprior used for the log error term.
 """
@@ -122,8 +126,8 @@ Flux.@functor SparseGaussianProcess
 """
     SparseGaussianProcess(k::CovarianceKernel)
 
-Creates a `SparseGaussianProcess` with kernel `k`, with 
-64 random features and 10 inducing points by default.
+Creates a `SparseGaussianProcess` with kernel `k`, with 64 random features 
+and 10 inducing points by default.
 """
 function SparseGaussianProcess(k::CovarianceKernel)
   (id,od) = k.dims
