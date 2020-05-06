@@ -75,7 +75,7 @@ values exponentiated to ensure they are positive. Returns inducing locations,
 inducing mean, jitter covariance, and inducing covariance.
 """
 function (self::MarginalInducingPoints)()
-  ones = (randn!(similar(self.log_jitter, (size(self.covariance_triangle,1)))) .* 0.0f0 .+ 1.0f0) # HACK: suppress autodiff unsupported mutation error without NaNs
+  ones = (randn!(similar(self.log_jitter, (size(self.covariance_triangle,1)))) .* 0 .+ 1) # HACK: suppress autodiff unsupported mutation error without NaNs
   U = UnitUpperTriangular(self.covariance_triangle) + Diagonal(exp.(diag(self.covariance_triangle)) .- ones)
   D = Diagonal(ones .* exp.(self.log_jitter))
   (self.location, self.mean, U, D, self.cholesky_cache)
