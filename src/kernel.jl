@@ -33,32 +33,6 @@ function pairwise_column_difference(x::AbstractMatrix, y::AbstractMatrix)
   reshape(x,(d1,m,1)) .- reshape(y,(d2,1,n))
 end
 
+include("kernels/operators.jl")
 include("kernels/euclidean.jl")
 include("kernels/manifold.jl")
-
-
-"""
-    InterDomainOperator
-
-An abstract inter-domain operator.
-"""
-abstract type InterDomainOperator end
-
-export IdentityOperator, GradientOperator
-
-"""
-    IdentityOperator
-
-The identity inter-domain operator ``\\mathcal{A}f = f``.
-"""
-struct IdentityOperator <: InterDomainOperator end
-
-"""
-    GradientOperator
-
-The gradient inter-domain operator ``\\mathcal{A}f = \\nabla f``.
-"""
-struct GradientOperator <: InterDomainOperator end
-
-*(k::Kernel, op::IdentityOperator) = k
-*(op::IdentityOperator, k::Kernel) = k

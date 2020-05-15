@@ -37,7 +37,7 @@ function rand!(gp::GaussianProcess; num_samples::Int = num_samples(gp))
   dm = length(mu)
   u = U isa Nothing ? zero(eltype(mu)) : U' * randn!(similar(mu, (dm, s)))
   e = V' * randn!(similar(mu, (dm, s)))
-  f = reshape(gp.prior_basis(z, k, B), (dm, s))
+  f = reshape(gp.prior_basis(z, B*k*B), (dm, s))
   v = mu .+ Q \ (u .- f .- e)
 
   gp.inducing_points.weights = v
@@ -59,7 +59,7 @@ function (gp::GaussianProcess)(x::AbstractMatrix)
   s = num_samples(gp)
 
   # evaluate prior part at x
-  f_prior = gp.prior_basis(x, k, A)
+  f_prior = gp.prior_basis(x, A*k*A)
 
   # evaluate data part at x
   (_,od) = (A*k*B).dims
@@ -129,13 +129,14 @@ Flux.@functor SparseGaussianProcess
 Creates a `SparseGaussianProcess` with kernel `k`, with 64 random features 
 and 10 inducing points by default.
 """
-function SparseGaussianProcess(k::CovarianceKernel)
+function SparseGaussianProcess(k::CovarianceKernel; 
+  observation_operator = IdentityOperator(), 
+  inter_domain_operator = IdentityOperator()
+  )
   (id,od) = k.dims
-  oo = IdentityOperator()
-  io = IdentityOperator()
   pb = EuclideanRandomFeatures(k, 64)
-  db = MarginalInducingPoints(io*k*io, 10)
+  db = MarginalInducingPoints(inter_domain_operator*k*inter_domain_operator, 10)
   le = zeros(1)
   hp = (log_error = NormalHyperprior([0.],[1.]),)
-  SparseGaussianProcess(k,oo,io,pb,db,le,hp)
+  SparseGaussianProcess(k,observation_operator,inter_domain_operator,pb,db,le,hp)
 end

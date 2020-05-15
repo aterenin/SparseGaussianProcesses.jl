@@ -15,7 +15,7 @@ mutable struct EuclideanRandomFeatures{A<:AbstractArray{<:Any,3},M<:AbstractMatr
   weights    :: M
 end
 
-Flux.trainable(k::EuclideanRandomFeatures) = ()
+Flux.trainable(f::EuclideanRandomFeatures) = ()
 Flux.@functor EuclideanRandomFeatures
 
 """
@@ -54,13 +54,12 @@ end
 
 """
     (self::EuclideanRandomFeatures)(x::AbstractMatrix, w::AbstractMatrix, 
-                                    k::EuclideanKernel, op::IdentityOperator)
+                                    k::EuclideanKernel)
 
-Evaluate the ``(\\mathcal{A} g)(x)`` where ``g`` is a Gaussian process with 
-kernel ``k``, ``\\mathcal{A}`` is an inter-domain operator, and ``x`` is the 
-data, using the random features.
+Evaluate the ``f(x)`` where ``f`` is a Gaussian process with kernel ``k``, 
+and ``x`` is the data, using the random features.
 """
-function (self::EuclideanRandomFeatures)(x::AbstractMatrix, k::EuclideanKernel, op::IdentityOperator)
+function (self::EuclideanRandomFeatures)(x::AbstractMatrix, k::EuclideanKernel)
   Fl = eltype(self.frequency)
   l = size(self.frequency, ndims(self.frequency))
   @cast rescaled_x[ID,N] := x[ID,N] / exp(k.log_length_scales[ID])
@@ -69,4 +68,24 @@ function (self::EuclideanRandomFeatures)(x::AbstractMatrix, k::EuclideanKernel, 
   basis_weight = sqrt(Fl(2)) .* exp.(k.log_variance ./ 2) ./ sqrt(Fl(l)) .* self.weights
   @matmul output[OD,N,S] := sum(L) basis_fn[OD,L,N] * basis_weight[L,S]
   output
+end
+
+"""
+    (self::EuclideanRandomFeatures)(x::AbstractMatrix, w::AbstractMatrix, 
+                                    k::GradientKernel{<:EuclideanKernel})
+
+Evaluate ``(\\nabla g)(x)`` where ``g`` is a Gaussian process with kernel ``k``,
+``\\nabla`` is the gradient inter-domain operator, and ``x`` is the data, using
+the random features.
+"""
+function (self::EuclideanRandomFeatures)(x::AbstractMatrix, k::GradientKernel{<:EuclideanKernel})
+  Fl = eltype(self.frequency)
+  l = size(self.frequency, ndims(self.frequency))
+  @cast rescaled_x[ID,N] := x[ID,N] / exp(k.parent.log_length_scales[ID])
+  @matmul basis_fn_inner_prod[OD,L,N] := sum(ID) self.frequency[ID,OD,L] * rescaled_x[ID,N]
+  @cast basis_fn_grad_outer[OD,L,N] := -sin(basis_fn_inner_prod[OD,L,N] + self.phase[OD,L])
+  @cast basis_fn_grad[ID,OD,L,N] := basis_fn_grad_outer[OD,L,N] * self.frequency[ID,OD,L] / exp(k.parent.log_length_scales[ID])
+  basis_weight = sqrt(Fl(2)) .* exp.(k.parent.log_variance ./ 2) ./ sqrt(Fl(l)) .* self.weights
+  @matmul output[ID,OD,N,S] := sum(L) basis_fn_grad[ID,OD,L,N] * basis_weight[L,S]
+  dropdims(output; dims=2)
 end

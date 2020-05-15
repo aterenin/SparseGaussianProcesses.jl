@@ -56,19 +56,18 @@ onfail(f, _::Tuple{Test.Fail,<:Any}) = f()
             k.log_variance .= log.(var)
             k.log_length_scales .= log.(ls)
             rf = EuclideanRandomFeatures(k, l)
-            op = IdentityOperator()
 
             x = randn(id, xd); # sort!(x; dims=2)
             rf.weights = randn(l,s)
             K = zeros(xd, xd)
 
-            @test size(rf(x,k,op)) == (1,xd,s)
+            @test size(rf(x,k)) == (1,xd,s)
 
             first_test ? first_test = false : begin @test_skip true; @info "Skipping slow RFF test"; continue end
 
             @showprogress for i in 1:t
               rf.weights = randn(l,s)
-              out = rf(x,k,op)
+              out = rf(x,k)
               K .+= cov(reshape(out, (xd,s))')
             end
             K ./= t

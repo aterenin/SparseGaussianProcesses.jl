@@ -1,5 +1,6 @@
 import Flux
 using Random: randn!
+using TensorCast
 
 export SquaredExponentialKernel
 
@@ -76,4 +77,70 @@ function spectral_distribution(k::SquaredExponentialKernel, n::Integer = 1)
   Fl = eltype(k.log_variance)
   (id,_) = k.dims
   sqrt(Fl(2)) .* randn!(similar(k.log_variance,(id,1,n)))
+end
+
+
+"""
+    (k::LeftGradientKernel{<:SquaredExponentialKernel})(x1::AbstractMatrix, 
+                                                        x2::AbstractMatrix)
+
+Computes the kernel matrix for the given gradient squared exponential 
+cross-covariance.
+"""
+function (k::LeftGradientKernel{<:SquaredExponentialKernel})(x1::AbstractMatrix, x2::AbstractMatrix)
+  (_,m) = size(x1)
+  (_,n) = size(x2)
+  (d,_) = k.parent.dims
+
+  dist = pairwise_column_difference(x1, x2) ./ exp.(k.parent.log_length_scales)
+  sq_dist = dropdims(sum(dist.^2; dims=1); dims=1)
+  kernel = exp.(k.parent.log_variance) .* exp.(-sq_dist)
+
+  dist_sc = dist ./ exp.(k.parent.log_length_scales)
+  @cast out[D,M,N] := -2 * kernel[M,N] * dist_sc[D,M,N]
+  reshape(out, (d*m,n))
+end
+
+
+"""
+    (k::RightGradientKernel{<:SquaredExponentialKernel})(x1::AbstractMatrix, 
+                                                         x2::AbstractMatrix)
+
+Computes the kernel matrix for the given gradient squared exponential 
+cross-covariance.
+"""
+function (k::RightGradientKernel{<:SquaredExponentialKernel})(x1::AbstractMatrix, x2::AbstractMatrix)
+  (_,m) = size(x1)
+  (_,n) = size(x2)
+  (d,_) = k.parent.dims
+
+  dist = pairwise_column_difference(x1, x2) ./ exp.(k.parent.log_length_scales)
+  sq_dist = dropdims(sum(dist.^2; dims=1); dims=1)
+  kernel = exp.(k.parent.log_variance) .* exp.(-sq_dist)
+
+  dist_sc = dist ./ exp.(k.parent.log_length_scales)
+  @cast out[M,D,N] := 2 * kernel[M,N] * dist_sc[D,M,N]
+  reshape(out, (m,d*n))
+end
+
+
+"""
+    (k::GradientKernel{<:SquaredExponentialKernel})(x1::AbstractMatrix, 
+                                                    x2::AbstractMatrix)
+
+Computes the kernel matrix for the given gradient squared exponential kernel.
+"""
+function (k::GradientKernel{<:SquaredExponentialKernel})(x1::AbstractMatrix, x2::AbstractMatrix)
+  (_,m) = size(x1)
+  (_,n) = size(x2)
+  (d,_) = k.parent.dims
+
+  dist = pairwise_column_difference(x1, x2) ./ exp.(k.parent.log_length_scales)
+  sq_dist = dropdims(sum(dist.^2; dims=1); dims=1)
+  kernel = exp.(k.parent.log_variance) .* exp.(-sq_dist)
+
+  dist_sc = dist ./ exp.(k.parent.log_length_scales)
+  scale_matrix = Diagonal(exp.(k.parent.log_length_scales))
+  @cast out[D1,M,D2,N] := (2*scale_matrix[D1,D2] - 4*dist_sc[D1,M,N] * dist_sc[D2,M,N]) * kernel[M,N]
+  reshape(out, (d*m,d*n))
 end
