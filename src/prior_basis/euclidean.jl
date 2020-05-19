@@ -65,7 +65,7 @@ function (self::EuclideanRandomFeatures)(x::AbstractMatrix, k::EuclideanKernel)
   @cast rescaled_x[ID,N] := x[ID,N] / exp(k.log_length_scales[ID])
   @matmul basis_fn_inner_prod[OD,L,N] := sum(ID) self.frequency[ID,OD,L] * rescaled_x[ID,N]
   @cast basis_fn[OD,L,N] := cos(basis_fn_inner_prod[OD,L,N] + self.phase[OD,L])
-  basis_weight = sqrt(Fl(2)) .* exp.(k.log_variance ./ 2) ./ sqrt(Fl(l)) .* self.weights
+  basis_weight = spectral_weights(k, self.frequency) .* sqrt(Fl(2)) .* exp.(k.log_variance ./ 2) ./ sqrt(Fl(l)) .* self.weights
   @matmul output[OD,N,S] := sum(L) basis_fn[OD,L,N] * basis_weight[L,S]
   output
 end
@@ -85,7 +85,7 @@ function (self::EuclideanRandomFeatures)(x::AbstractMatrix, k::GradientKernel{<:
   @matmul basis_fn_inner_prod[OD,L,N] := sum(ID) self.frequency[ID,OD,L] * rescaled_x[ID,N]
   @cast basis_fn_grad_outer[OD,L,N] := -sin(basis_fn_inner_prod[OD,L,N] + self.phase[OD,L])
   @cast basis_fn_grad[ID,OD,L,N] := basis_fn_grad_outer[OD,L,N] * self.frequency[ID,OD,L] / exp(k.parent.log_length_scales[ID])
-  basis_weight = sqrt(Fl(2)) .* exp.(k.parent.log_variance ./ 2) ./ sqrt(Fl(l)) .* self.weights
+  basis_weight = spectral_weights(k, self.frequency) .* sqrt(Fl(2)) .* exp.(k.parent.log_variance ./ 2) ./ sqrt(Fl(l)) .* self.weights
   @matmul output[ID,OD,N,S] := sum(L) basis_fn_grad[ID,OD,L,N] * basis_weight[L,S]
   dropdims(output; dims=2)
 end

@@ -79,6 +79,10 @@ function spectral_distribution(k::SquaredExponentialKernel, n::Integer = 1)
   sqrt(Fl(2)) .* randn!(similar(k.log_variance,(id,1,n)))
 end
 
+function spectral_weights(k::SquaredExponentialKernel, frequency::AbstractArray{<:Any,3})
+  1
+end
+
 
 """
     (k::LeftGradientKernel{<:SquaredExponentialKernel})(x1::AbstractMatrix, 

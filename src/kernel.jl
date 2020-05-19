@@ -35,4 +35,4 @@ end
 
 include("kernels/operators.jl")
 include("kernels/euclidean.jl")
-include("kernels/manifold.jl")
+include("kernels/circular.jl")
