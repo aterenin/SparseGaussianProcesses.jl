@@ -4,13 +4,6 @@ using TensorCast
 
 export SquaredExponentialKernel
 
-"""
-    EuclideanKernel
-
-An abstract covariance kernel defined over a Euclidean space.
-"""
-abstract type EuclideanKernel <: CovarianceKernel end
-
 function hyperprior_logpdf(self::EuclideanKernel)
   self.hyperprior.log_variance(self.log_variance) .+ 
     self.hyperprior.log_length_scales(self.log_length_scales)
@@ -80,7 +73,7 @@ function spectral_distribution(k::SquaredExponentialKernel, n::Integer = 1)
 end
 
 function spectral_weights(k::SquaredExponentialKernel, frequency::AbstractArray{<:Any,3})
-  1
+  1 # randn!(similar(frequency, size(frequency,ndims(frequency)))) .* 0 .+ 1
 end
 
 

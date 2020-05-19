@@ -33,6 +33,13 @@ function pairwise_column_difference(x::AbstractMatrix, y::AbstractMatrix)
   reshape(x,(d1,m,1)) .- reshape(y,(d2,1,n))
 end
 
+"""
+    EuclideanKernel
+
+An abstract covariance kernel defined over a Euclidean space.
+"""
+abstract type EuclideanKernel <: CovarianceKernel end
+
 include("kernels/operators.jl")
 include("kernels/euclidean.jl")
 include("kernels/circular.jl")
