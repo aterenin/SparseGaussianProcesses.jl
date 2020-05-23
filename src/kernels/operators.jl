@@ -7,7 +7,7 @@ An abstract inter-domain operator.
 """
 abstract type InterDomainOperator end
 
-export IdentityOperator, GradientOperator, ProductKernel
+export IdentityOperator, GradientOperator, GradientKernel, ProductKernel
 
 """
     IdentityOperator
@@ -45,7 +45,22 @@ Flux.@functor GradientKernel
 *(k::LeftGradientKernel{<:CovarianceKernel}, op::GradientOperator) = GradientKernel(k.parent)
 *(op::GradientOperator, k::RightGradientKernel{<:CovarianceKernel}) = GradientKernel(k.parent)
 
+function spectral_weights(k::GradientKernel, frequency::AbstractArray{<:Any,3})
+    spectral_weights(k.parent, frequency)
+end
 
+function Base.getproperty(k::GradientKernel, s::Symbol)
+    if s == :dims
+        (id, _) = k.parent.dims
+        (id, id)
+    elseif s == :log_length_scales
+        k.parent.log_length_scales
+    elseif s == :log_variance
+        k.parent.log_variance
+    else
+        getfield(k,s)
+    end
+end
 
 
 
@@ -96,11 +111,48 @@ function hyperprior_logpdf(k::ProductKernel)
     hyperprior_logpdf(k.kernel_one) .+ hyperprior_logpdf(k.kernel_two)
 end
 
-# function (k::GradientKernel{<:ProductKernel})(x1::AbstractMatrix, x2::AbstractMatrix)
-#     g = GradientOperator()
-#     @views K1 = (g*k.parent.kernel_one*g)(x1[k.parent.dims_one,:],x2[k.parent.dims_one,:])
-#     @views K2 = (g*k.parent.kernel_two*g)(x1[k.parent.dims_two,:],x2[k.parent.dims_two,:])
-#     a1 = reshape(K1,)
-#     a2 = ???
-#     # reshape(vcat(a1, a2; dims=1), ())
-# end
+function (k::LeftGradientKernel{<:ProductKernel})(x1::AbstractMatrix, x2::AbstractMatrix)
+    (_,n1) = size(x1)
+    (_,n2) = size(x2)
+    (d1, d2) = (length(k.parent.dims_one), length(k.parent.dims_two))
+    g = GradientOperator()
+    @views K1 = (k.parent.kernel_one)(x1[k.parent.dims_one,:],x2[k.parent.dims_one,:])
+    @views K2 = (k.parent.kernel_two)(x1[k.parent.dims_two,:],x2[k.parent.dims_two,:])
+    @views gK1 = (g*k.parent.kernel_one)(x1[k.parent.dims_one,:],x2[k.parent.dims_one,:])
+    @views gK2 = (g*k.parent.kernel_two)(x1[k.parent.dims_two,:],x2[k.parent.dims_two,:])
+    G1 = reshape(gK1, (d1,n1,n2)) .* reshape(K2, (1,n1,n2))
+    G2 = reshape(K1, (1,n1,n2)) .* reshape(gK2, (d2,n1,n2))
+    reshape(cat(G1, G2; dims=1), ((d1+d2)*n1, n2))
+end
+
+function (k::RightGradientKernel{<:ProductKernel})(x1::AbstractMatrix, x2::AbstractMatrix)
+    (_,n1) = size(x1)
+    (_,n2) = size(x2)
+    (d1, d2) = (length(k.parent.dims_one), length(k.parent.dims_two))
+    g = GradientOperator()
+    @views K1 = (k.parent.kernel_one)(x1[k.parent.dims_one,:],x2[k.parent.dims_one,:])
+    @views K2 = (k.parent.kernel_two)(x1[k.parent.dims_two,:],x2[k.parent.dims_two,:])
+    @views gK1 = (k.parent.kernel_one*g)(x1[k.parent.dims_one,:],x2[k.parent.dims_one,:])
+    @views gK2 = (k.parent.kernel_two*g)(x1[k.parent.dims_two,:],x2[k.parent.dims_two,:])
+    G1 = reshape(gK1, (n1,d1,n2)) .* reshape(K2, (n1,1,n2))
+    G2 = reshape(K1, (n1,1,n2)) .* reshape(gK2, (n1,d2,n2))
+    reshape(cat(G1, G2; dims=2), (n1, (d1+d2)*n2))
+end
+
+function (k::GradientKernel{<:ProductKernel})(x1::AbstractMatrix, x2::AbstractMatrix)
+    (_,n1) = size(x1)
+    (_,n2) = size(x2)
+    (d1, d2) = (length(k.parent.dims_one), length(k.parent.dims_two))
+    g = GradientOperator()
+    @views K1 = (k.parent.kernel_one)(x1[k.parent.dims_one,:],x2[k.parent.dims_one,:])
+    @views K2 = (k.parent.kernel_two)(x1[k.parent.dims_two,:],x2[k.parent.dims_two,:])
+    @views gK1 = (g*k.parent.kernel_one)(x1[k.parent.dims_one,:],x2[k.parent.dims_one,:])
+    @views gKg1 = (g*k.parent.kernel_one*g)(x1[k.parent.dims_one,:],x2[k.parent.dims_one,:])
+    @views gKg2 = (g*k.parent.kernel_two*g)(x1[k.parent.dims_two,:],x2[k.parent.dims_two,:])
+    @views Kg2 = (k.parent.kernel_two*g)(x1[k.parent.dims_two,:],x2[k.parent.dims_two,:])
+    G1 = reshape(gKg1, (d1,n1,d1,n2)) .* reshape(K2, (1,n1,1,n2))
+    G2 = reshape(gK1, (d1,n1,1,n2)) .* reshape(Kg2, (1,n1,d2,n2))
+    G3 = permutedims(G2, (3,2,1,4))
+    G4 = reshape(K1, (1,n1,1,n2)) .* reshape(gKg2, (d2,n1,d2,n2))
+    reshape(cat(cat(G1, G2; dims=3), cat(G3, G4; dims=3); dims=1), ((d1+d2)*n1, (d1+d2)*n2))
+end

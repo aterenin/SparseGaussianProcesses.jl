@@ -79,7 +79,7 @@ function (k::CircularSquaredExponentialKernel)(x1::AbstractMatrix, x2::AbstractM
   sq_dist = dropdims(sum(loop_dist.^2; dims=2); dims=2)
   norm_const = sum(exp.(.-(reshape(loop, (1,:)) ./ exp.(k.log_length_scales)).^2); dims=(1,2))
   out = exp.(k.log_variance) .* dropdims(sum(exp.(-sq_dist); dims=1); dims=1) ./ norm_const
-  m == n ? (out + out')./2 : out
+  m == n ? (out + out')./2 : out # symmetrize to account for roundoff error
 end
 
 
