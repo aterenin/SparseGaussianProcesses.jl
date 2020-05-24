@@ -53,7 +53,6 @@ are ordered `(output_dimension, data_point_index, sample_index)`.
 """
 function (gp::GaussianProcess)(x::AbstractMatrix)
   (id,n) = size(x)
-  v = gp.inducing_points.weights
   (z,_,_,_) = gp.inducing_points()
   (k,A,B) = (gp.kernel, gp.observation_operator, gp.inter_domain_operator)
   s = num_samples(gp)
@@ -64,7 +63,33 @@ function (gp::GaussianProcess)(x::AbstractMatrix)
   # evaluate data part at x
   (_,od) = (A*k*B).dims
   K = (A*k*B)(x, z)
+  v = gp.inducing_points.weights
   f_data = reshape(K * v, (od,n,s)) # non-batched
+
+  # combine
+  f_prior .+ f_data
+end
+
+"""
+    (gp::GaussianProcess)(x::AbstractArray{<:Any,3})
+
+Evaluate `gp` at a batched set of points `x`. Returns a 3-array whose dimensions
+are ordered `(output_dimension, data_point_index, batch_index)`.
+"""
+function (gp::GaussianProcess)(x::AbstractArray{<:Any,3})
+  (id,n,b) = size(x)
+  (z,_,_,_) = gp.inducing_points()
+  (k,A,B) = (gp.kernel, gp.observation_operator, gp.inter_domain_operator)
+  s = num_samples(gp)
+
+  # evaluate prior part at x
+  f_prior = gp.prior_basis(x, A*k*A)
+
+  # evaluate data part at x
+  (_,od) = (A*k*B).dims
+  K = reshape((A*k*B)(x, z), (od,n,b,:))
+  v = reshape(gp.inducing_points.weights', (1,1,s,:))
+  f_data = dropdims(sum(K .* v; dims=4); dims=4) # batched
 
   # combine
   f_prior .+ f_data

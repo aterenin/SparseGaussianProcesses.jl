@@ -43,3 +43,15 @@ abstract type EuclideanKernel <: CovarianceKernel end
 include("kernels/operators.jl")
 include("kernels/euclidean.jl")
 include("kernels/circular.jl")
+
+
+"""
+    (k::Kernel)(x1::AbstractArray{<:Any,3}, x2::AbstractMatrix)
+
+Computes a kernel matrix in batched form.
+"""
+function (k::Kernel)(x1::AbstractArray{<:Any,3}, x2::AbstractMatrix)
+  (d,n1,n2) = size(x1)
+  x1r = reshape(x1, (d,n1*n2))
+  k(x1r, x2)
+end
