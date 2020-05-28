@@ -26,11 +26,11 @@ Draw a new set of random features, by randomly sampling a new frequencies
 from the spectral measure, and new phases uniformly from ``(0, 2\\pi)``.
 Does NOT automatically resample the GP containing the features.
 """
-function rand!(self::EuclideanRandomFeatures, k::EuclideanKernel, num_features::Int = size(self.frequency,ndims(self.frequency)))
+function rand!(self::EuclideanRandomFeatures, k::EuclideanKernel; num_features::Int = size(self.frequency,ndims(self.frequency)))
   (id,od) = k.dims
   (_,s) = size(self.weights)
   Fl = eltype(self.frequency)
-  self.frequency = spectral_distribution(k, num_features)
+  self.frequency = spectral_distribution(k; num_samples = num_features)
   self.phase = Fl(2*pi) .* rand!(similar(self.phase, (od,num_features)))
   self.weights = randn!(similar(self.weights, (num_features, s)))
   nothing

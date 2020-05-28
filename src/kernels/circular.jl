@@ -52,6 +52,7 @@ Creates a squared exponential kernel defined on the circle, or more generally a
 torus of dimension `dim`.
 """
 function CircularSquaredExponentialKernel(dim::Int)
+  if dim!=1 error("Not implemented") end
   dims = (dim, 1)
   log_variance = [0.0]
   log_length_scales = zeros(dim)
@@ -72,32 +73,36 @@ function (k::CircularSquaredExponentialKernel)(x1::AbstractMatrix, x2::AbstractM
   (_,m) = size(x1)
   (_,n) = size(x2)
   Fl = eltype(x1)
-  dist_eucl = pairwise_column_difference(x1,x2)
-  dist = atan.(sin.(dist_eucl),cos.(dist_eucl)) ./ exp.(k.log_length_scales)
-  loop = Fl(2*pi) .* (-k.truncation_level:1:k.truncation_level) # HACK: suppress autodiff unsupported mutation error without NaNs
-  loop_dist = reshape(dist, (1,d,m,n)) .+ loop
-  sq_dist = dropdims(sum(loop_dist.^2; dims=2); dims=2)
-  norm_const = sum(exp.(.-(reshape(loop, (1,:)) ./ exp.(k.log_length_scales)).^2); dims=(1,2))
-  out = exp.(k.log_variance) .* dropdims(sum(exp.(-sq_dist); dims=1); dims=1) ./ norm_const
+  loop = Fl(2*pi) .* (-k.truncation_level:1:k.truncation_level) # HACK: only correct for d=1!
+  dist = (reshape(pairwise_column_difference(x1,x2), (1,d,m,n)) .+ loop) ./ reshape(exp.(k.log_length_scales), (1,d,1,1))
+  sq_dist = dropdims(sum(dist.^2; dims=2); dims=2)
+  out = exp.(k.log_variance) .* dropdims(sum(exp.(.-sq_dist); dims=1); dims=1)
+  out
   m == n ? (out + out')./2 : out # symmetrize to account for roundoff error
 end
 
 
 """
-    spectral_distribution(k::CircularSquaredExponentialKernel, n::Integer = 1)
+    spectral_distribution(k::CircularSquaredExponentialKernel, 
+                          num_samples::Integer)
 
 Draws `n` samples from the spectral distribution of a standard squared
 exponential kernel on the circle.
 """
-function spectral_distribution(k::CircularSquaredExponentialKernel, n::Integer = 1)
-  Fl = eltype(k.log_variance)
+function spectral_distribution(k::CircularSquaredExponentialKernel; num_samples::Integer)
   (id,_) = k.dims
   support = (-k.truncation_level):(k.truncation_level) |> collect
-  measure = [exp(-2 * k.reference_length_scale^2 * pi^2 * n^2) for n in support] |> StatsBase.Weights
-  frequency = StatsBase.sample(support, measure, n*id)
-  reshape(frequency, (id,1,n))
+  measure = [exp(-1//4 * k.reference_length_scale^2 * n^2) for n in support] |> StatsBase.Weights
+  frequency = StatsBase.sample(support, measure, num_samples*id)
+  reshape(frequency, (id,1,num_samples))
 end
 
 function spectral_weights(k::CircularSquaredExponentialKernel, frequency::AbstractArray{<:Any,3})
-  dropdims(sum(exp.(-2 .* (exp.(k.log_length_scales).^2 .- k.reference_length_scale^2) .* eltype(frequency)(pi)^2 .* frequency.^2); dims=(1,2)); dims=(1,2))
+  Fl = eltype(frequency)
+  loop = -k.truncation_level:1:k.truncation_level # HACK: only correct for d=1!
+  norm_const_ls = sum(exp.(-1//4 .* reshape(loop, (1,:)).^2 .* exp.(2 .* k.log_length_scales)); dims=(1,2))
+  norm_const_std = sum(exp.(-1//4 .* loop.^2 .* k.reference_length_scale.^2); dims=1)
+  exp_ratio = dropdims(sum(exp.(-1//4 .* (exp.(k.log_length_scales).^2 .- k.reference_length_scale^2) .* frequency.^2); dims=(1,2)); dims=(1,2))
+  ls_ratio = exp.(sum(k.log_length_scales; dims=1)) ./ k.reference_length_scale
+  ls_ratio .* exp_ratio .* norm_const_std ./ norm_const_ls
 end

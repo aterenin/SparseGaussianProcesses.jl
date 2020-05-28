@@ -56,20 +56,20 @@ function (k::SquaredExponentialKernel)(x1::AbstractMatrix, x2::AbstractMatrix)
   (_,n) = size(x2)
   dist = pairwise_column_difference(x1,x2) ./ exp.(k.log_length_scales)
   sq_dist = dropdims(sum(dist.^2; dims=1); dims=1)
-  exp.(k.log_variance) .* exp.(-sq_dist)
+  exp.(k.log_variance) .* exp.(.-sq_dist)
 end
 
 
 """
-    spectral_distribution(k::SquaredExponentialKernel, n::Integer = 1)
+    spectral_distribution(k::SquaredExponentialKernel; num_samples::Integer)
 
 Draws `n` samples from the spectral distribution of a standard squared 
 exponential kernel, which is multivariate Gaussian with covariance ``2 I``.
 """
-function spectral_distribution(k::SquaredExponentialKernel, n::Integer = 1)
+function spectral_distribution(k::SquaredExponentialKernel; num_samples::Integer)
   Fl = eltype(k.log_variance)
   (id,_) = k.dims
-  sqrt(Fl(2)) .* randn!(similar(k.log_variance,(id,1,n)))
+  sqrt(Fl(2)) .* randn!(similar(k.log_variance,(id,1,num_samples)))
 end
 
 function spectral_weights(k::SquaredExponentialKernel, frequency::AbstractArray{<:Any,3})
@@ -91,7 +91,7 @@ function (k::LeftGradientKernel{<:SquaredExponentialKernel})(x1::AbstractMatrix,
 
   dist = pairwise_column_difference(x1, x2) ./ exp.(k.parent.log_length_scales)
   sq_dist = dropdims(sum(dist.^2; dims=1); dims=1)
-  kernel = exp.(k.parent.log_variance) .* exp.(-sq_dist)
+  kernel = exp.(k.parent.log_variance) .* exp.(.-sq_dist)
 
   dist_sc = dist ./ exp.(k.parent.log_length_scales)
   @cast out[D,M,N] := -2 * kernel[M,N] * dist_sc[D,M,N]
@@ -113,7 +113,7 @@ function (k::RightGradientKernel{<:SquaredExponentialKernel})(x1::AbstractMatrix
 
   dist = pairwise_column_difference(x1, x2) ./ exp.(k.parent.log_length_scales)
   sq_dist = dropdims(sum(dist.^2; dims=1); dims=1)
-  kernel = exp.(k.parent.log_variance) .* exp.(-sq_dist)
+  kernel = exp.(k.parent.log_variance) .* exp.(.-sq_dist)
 
   dist_sc = dist ./ exp.(k.parent.log_length_scales)
   @cast out[M,D,N] := 2 * kernel[M,N] * dist_sc[D,M,N]
@@ -134,7 +134,7 @@ function (k::GradientKernel{<:SquaredExponentialKernel})(x1::AbstractMatrix, x2:
 
   dist = pairwise_column_difference(x1, x2) ./ exp.(k.parent.log_length_scales)
   sq_dist = dropdims(sum(dist.^2; dims=1); dims=1)
-  kernel = exp.(k.parent.log_variance) .* exp.(-sq_dist)
+  kernel = exp.(k.parent.log_variance) .* exp.(.-sq_dist)
 
   dist_sc = dist ./ exp.(k.parent.log_length_scales)
   scale_matrix = Diagonal(exp.(k.parent.log_length_scales))

@@ -87,8 +87,8 @@ function (k::ProductKernel)(x1::AbstractMatrix, x2::AbstractMatrix)
     K1 .* K2
 end
 
-function spectral_distribution(k::ProductKernel, n::Integer = 1)
-    vcat(spectral_distribution(k.kernel_one, n), spectral_distribution(k.kernel_two, n))
+function spectral_distribution(k::ProductKernel; num_samples::Integer)
+    vcat(spectral_distribution(k.kernel_one; num_samples=num_samples), spectral_distribution(k.kernel_two; num_samples=num_samples))
 end
 
 function spectral_weights(k::ProductKernel, frequency::AbstractArray{<:Any,3})
