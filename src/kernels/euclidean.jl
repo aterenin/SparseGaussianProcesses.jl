@@ -73,7 +73,7 @@ function spectral_distribution(k::SquaredExponentialKernel; num_samples::Integer
 end
 
 function spectral_weights(k::SquaredExponentialKernel, frequency::AbstractArray{<:Any,3})
-  1 # randn!(similar(frequency, size(frequency,ndims(frequency)))) .* 0 .+ 1
+  (1, exp.(k.log_length_scales))
 end
 
 

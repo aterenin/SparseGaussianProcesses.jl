@@ -102,7 +102,6 @@ function spectral_weights(k::CircularSquaredExponentialKernel, frequency::Abstra
   loop = -k.truncation_level:1:k.truncation_level # HACK: only correct for d=1!
   norm_const_ls = sum(exp.(-1//4 .* reshape(loop, (1,:)).^2 .* exp.(2 .* k.log_length_scales)); dims=(1,2))
   norm_const_std = sum(exp.(-1//4 .* loop.^2 .* k.reference_length_scale.^2); dims=1)
-  exp_ratio = dropdims(sum(exp.(-1//4 .* (exp.(k.log_length_scales).^2 .- k.reference_length_scale^2) .* frequency.^2); dims=(1,2)); dims=(1,2))
-  ls_ratio = exp.(sum(k.log_length_scales; dims=1)) ./ k.reference_length_scale
-  ls_ratio .* exp_ratio .* norm_const_std ./ norm_const_ls
+  ratio = dropdims(sum(exp.(-1//8 .* (exp.(2 .* k.log_length_scales) .- k.reference_length_scale.^2) .* frequency.^2); dims=(1,2)); dims=(1,2))
+  (ratio .* sqrt.(norm_const_std ./ norm_const_ls), 1)
 end
