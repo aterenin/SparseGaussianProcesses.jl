@@ -94,7 +94,9 @@ end
 function spectral_weights(k::ProductKernel, frequency::AbstractArray{<:Any,3})
     @views freq_one = frequency[k.dims_one,:,:]
     @views freq_two = frequency[k.dims_two,:,:]
-    spectral_weights(k.kernel_one, freq_one) .* spectral_weights(k.kernel_two, freq_two)
+    (outer_weights_one, inner_weights_one) = spectral_weights(k.kernel_one, freq_one)
+    (outer_weights_two, inner_weights_two) = spectral_weights(k.kernel_two, freq_two)
+    (outer_weights_one .* outer_weights_two, vcat(inner_weights_one, inner_weights_two))
 end
 
 function Base.getproperty(k::ProductKernel, s::Symbol)
