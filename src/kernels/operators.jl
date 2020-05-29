@@ -39,9 +39,11 @@ Flux.@functor RightGradientKernel
 *(k::Kernel, op::GradientOperator) = RightGradientKernel(k)
 
 struct GradientKernel{K<:CovarianceKernel} <: CovarianceKernel
+    dims:: Tuple{Int, Int}
     parent::K
 end
 Flux.@functor GradientKernel
+GradientKernel(k::CovarianceKernel) = GradientKernel((k.dims[1],k.dims[1]), k)
 *(k::LeftGradientKernel{<:CovarianceKernel}, op::GradientOperator) = GradientKernel(k.parent)
 *(op::GradientOperator, k::RightGradientKernel{<:CovarianceKernel}) = GradientKernel(k.parent)
 
@@ -49,28 +51,17 @@ function spectral_weights(k::GradientKernel, frequency::AbstractArray{<:Any,3})
     spectral_weights(k.parent, frequency)
 end
 
-function Base.getproperty(k::GradientKernel, s::Symbol)
-    if s == :dims
-        (id, _) = k.parent.dims
-        (id, id)
-    elseif s == :log_length_scales
-        k.parent.log_length_scales
-    elseif s == :log_variance
-        k.parent.log_variance
-    else
-        getfield(k,s)
-    end
-end
 
 
 
 struct ProductKernel{K1<:Kernel,K2<:Kernel} <: EuclideanKernel
-    dims              :: Tuple{Integer, Integer}
+    dims:: Tuple{Int, Int}
     kernel_one::K1
     dims_one::UnitRange{Int}
     kernel_two::K2
     dims_two::UnitRange{Int}
 end
+Flux.trainable(k::ProductKernel) = (k.kernel_one, k.kernel_two)
 Flux.@functor ProductKernel
 
 function ProductKernel(k1::CovarianceKernel,k2::CovarianceKernel)
@@ -97,16 +88,6 @@ function spectral_weights(k::ProductKernel, frequency::AbstractArray{<:Any,3})
     (outer_weights_one, inner_weights_one) = spectral_weights(k.kernel_one, freq_one)
     (outer_weights_two, inner_weights_two) = spectral_weights(k.kernel_two, freq_two)
     (outer_weights_one .* outer_weights_two, vcat(inner_weights_one, inner_weights_two))
-end
-
-function Base.getproperty(k::ProductKernel, s::Symbol)
-    if s == :log_length_scales
-        vcat(k.kernel_one.log_length_scales, k.kernel_two.log_length_scales)
-    elseif s == :log_variance
-        k.kernel_one.log_variance .+ k.kernel_two.log_variance
-    else
-        getfield(k,s)
-    end
 end
 
 function hyperprior_logpdf(k::ProductKernel)

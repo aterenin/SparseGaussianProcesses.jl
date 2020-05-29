@@ -69,18 +69,18 @@ end
 Computes the kernel matrix for the given circular squared exponential kernel.
 """
 function (k::CircularSquaredExponentialKernel)(x1::AbstractMatrix, x2::AbstractMatrix)
-  d = length(k.log_length_scales)
   (_,m) = size(x1)
   (_,n) = size(x2)
+  (d,_) = k.dims
   Fl = eltype(x1)
+  
   loop = Fl(2*pi) .* (-k.truncation_level:1:k.truncation_level) # HACK: only correct for d=1!
   dist = (reshape(pairwise_column_difference(x1,x2), (1,d,m,n)) .+ loop) ./ reshape(exp.(k.log_length_scales), (1,d,1,1))
   sq_dist = dropdims(sum(dist.^2; dims=2); dims=2)
-  out = exp.(k.log_variance) .* dropdims(sum(exp.(.-sq_dist); dims=1); dims=1)
-  out
-  m == n ? (out + out')./2 : out # symmetrize to account for roundoff error
-end
+  kernel = exp.(k.log_variance) .* dropdims(sum(exp.(.-sq_dist); dims=1); dims=1)
 
+  m == n ? (kernel + kernel')./2 : kernel # symmetrize to account for roundoff error
+end
 
 """
     spectral_distribution(k::CircularSquaredExponentialKernel, 
@@ -103,5 +103,5 @@ function spectral_weights(k::CircularSquaredExponentialKernel, frequency::Abstra
   norm_const_ls = sum(exp.(-1//4 .* reshape(loop, (1,:)).^2 .* exp.(2 .* k.log_length_scales)); dims=(1,2))
   norm_const_std = sum(exp.(-1//4 .* loop.^2 .* k.reference_length_scale.^2); dims=1)
   ratio = dropdims(sum(exp.(-1//8 .* (exp.(2 .* k.log_length_scales) .- k.reference_length_scale.^2) .* frequency.^2); dims=(1,2)); dims=(1,2))
-  (ratio .* sqrt.(norm_const_std ./ norm_const_ls), 1)
+  (exp.(k.log_variance ./ 2) .* ratio .* sqrt.(norm_const_std ./ norm_const_ls), 1)
 end
