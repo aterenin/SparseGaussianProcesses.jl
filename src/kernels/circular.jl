@@ -82,6 +82,55 @@ function (k::CircularSquaredExponentialKernel)(x1::AbstractMatrix, x2::AbstractM
   m == n ? (kernel + kernel')./2 : kernel # symmetrize to account for roundoff error
 end
 
+function (k::LeftGradientKernel{<:CircularSquaredExponentialKernel})(x1::AbstractMatrix, x2::AbstractMatrix)
+  (_,m) = size(x1)
+  (_,n) = size(x2)
+  (d,_) = k.dims
+  Fl = eltype(x1)
+  
+  loop = Fl(2*pi) .* (-k.parent.truncation_level:1:k.parent.truncation_level) # HACK: only correct for d=1!
+  dist = (reshape(pairwise_column_difference(x1,x2), (1,d,m,n)) .+ loop) ./ reshape(exp.(k.parent.log_length_scales), (1,d,1,1))
+  sq_dist = dropdims(sum(dist.^2; dims=2); dims=2)
+  kernel = exp.(k.parent.log_variance) .* exp.(.-sq_dist)
+
+  dist_sc = dist ./ reshape(exp.(k.parent.log_length_scales), (1,d,1,1))
+  @reduce out[D,M,N] := sum(L) -2 * kernel[L,M,N] * disc_sc[L,D,M,N]
+  reshape(out, (d*m,n))
+end
+
+function (k::RightGradientKernel{<:CircularSquaredExponentialKernel})(x1::AbstractMatrix, x2::AbstractMatrix)
+  (_,m) = size(x1)
+  (_,n) = size(x2)
+  (d,_) = k.dims
+  Fl = eltype(x1)
+  
+  loop = Fl(2*pi) .* (-k.parent.truncation_level:1:k.parent.truncation_level) # HACK: only correct for d=1!
+  dist = (reshape(pairwise_column_difference(x1,x2), (1,d,m,n)) .+ loop) ./ reshape(exp.(k.parent.log_length_scales), (1,d,1,1))
+  sq_dist = dropdims(sum(dist.^2; dims=2); dims=2)
+  kernel = exp.(k.parent.log_variance) .* exp.(.-sq_dist)
+
+  dist_sc = dist ./ reshape(exp.(k.parent.log_length_scales), (1,d,1,1))
+  @reduce out[M,D,N] := sum(L) 2 * kernel[L,M,N] * disc_sc[L,D,M,N]
+  reshape(out, (m,d*n))
+end
+
+function (k::GradientKernel{<:CircularSquaredExponentialKernel})(x1::AbstractMatrix, x2::AbstractMatrix)
+  (_,m) = size(x1)
+  (_,n) = size(x2)
+  (d,_) = k.dims
+  Fl = eltype(x1)
+  
+  loop = Fl(2*pi) .* (-k.parent.truncation_level:1:k.parent.truncation_level) # HACK: only correct for d=1!
+  dist = (reshape(pairwise_column_difference(x1,x2), (1,d,m,n)) .+ loop) ./ reshape(exp.(k.parent.log_length_scales), (1,d,1,1))
+  sq_dist = dropdims(sum(dist.^2; dims=2); dims=2)
+  kernel = exp.(k.parent.log_variance) .* exp.(.-sq_dist)
+
+  dist_sc = dist ./ reshape(exp.(k.parent.log_length_scales), (1,d,1,1))
+  scale_matrix = Diagonal(exp.(k.parent.log_length_scales))
+  @reduce out[D1,M,D2,N] := sum(L) (2*scale_matrix[D1,D2] - 4*dist_sc[L,D1,M,N] * dist_sc[L,D2,M,N]) * kernel[L,M,N]
+  reshape(out, (d*m,d*n))
+end
+
 """
     spectral_distribution(k::CircularSquaredExponentialKernel, 
                           num_samples::Integer)
