@@ -137,5 +137,6 @@ function (k::GradientKernel{<:ProductKernel})(x1::AbstractMatrix, x2::AbstractMa
     G2 = reshape(gK1, (d1,n1,1,n2)) .* reshape(Kg2, (1,n1,d2,n2))
     G3 = permutedims(G2, (3,2,1,4))
     G4 = reshape(K1, (1,n1,1,n2)) .* reshape(gKg2, (d2,n1,d2,n2))
-    reshape(cat(cat(G1, G2; dims=3), cat(G3, G4; dims=3); dims=1), ((d1+d2)*n1, (d1+d2)*n2))
+    G = reshape(cat(cat(G1, G2; dims=3), cat(G3, G4; dims=3); dims=1), ((d1+d2)*n1, (d1+d2)*n2))
+    n1 == n2 ? (G + G') ./ 2 : G
 end

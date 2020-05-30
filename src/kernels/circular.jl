@@ -57,7 +57,7 @@ function CircularSquaredExponentialKernel(dim::Int)
   log_variance = [0.0]
   log_length_scales = zeros(dim)
   truncation_level = 10
-  reference_length_scale = 1//10
+  reference_length_scale = 1//1
   hyperprior = (log_variance = NormalHyperprior([0.0],[1.0]), log_length_scales = NormalHyperprior(zeros(dim),ones(dim)))
   CircularSquaredExponentialKernel(dims, log_variance, log_length_scales, truncation_level, reference_length_scale, hyperprior)
 end
@@ -85,7 +85,7 @@ end
 function (k::LeftGradientKernel{<:CircularSquaredExponentialKernel})(x1::AbstractMatrix, x2::AbstractMatrix)
   (_,m) = size(x1)
   (_,n) = size(x2)
-  (d,_) = k.dims
+  (d,_) = k.parent.dims
   Fl = eltype(x1)
   
   loop = Fl(2*pi) .* (-k.parent.truncation_level:1:k.parent.truncation_level) # HACK: only correct for d=1!
@@ -94,14 +94,14 @@ function (k::LeftGradientKernel{<:CircularSquaredExponentialKernel})(x1::Abstrac
   kernel = exp.(k.parent.log_variance) .* exp.(.-sq_dist)
 
   dist_sc = dist ./ reshape(exp.(k.parent.log_length_scales), (1,d,1,1))
-  @reduce out[D,M,N] := sum(L) -2 * kernel[L,M,N] * disc_sc[L,D,M,N]
+  @reduce out[D,M,N] := sum(L) -2 * kernel[L,M,N] * dist_sc[L,D,M,N]
   reshape(out, (d*m,n))
 end
 
 function (k::RightGradientKernel{<:CircularSquaredExponentialKernel})(x1::AbstractMatrix, x2::AbstractMatrix)
   (_,m) = size(x1)
   (_,n) = size(x2)
-  (d,_) = k.dims
+  (d,_) = k.parent.dims
   Fl = eltype(x1)
   
   loop = Fl(2*pi) .* (-k.parent.truncation_level:1:k.parent.truncation_level) # HACK: only correct for d=1!
@@ -110,14 +110,14 @@ function (k::RightGradientKernel{<:CircularSquaredExponentialKernel})(x1::Abstra
   kernel = exp.(k.parent.log_variance) .* exp.(.-sq_dist)
 
   dist_sc = dist ./ reshape(exp.(k.parent.log_length_scales), (1,d,1,1))
-  @reduce out[M,D,N] := sum(L) 2 * kernel[L,M,N] * disc_sc[L,D,M,N]
+  @reduce out[M,D,N] := sum(L) 2 * kernel[L,M,N] * dist_sc[L,D,M,N]
   reshape(out, (m,d*n))
 end
 
 function (k::GradientKernel{<:CircularSquaredExponentialKernel})(x1::AbstractMatrix, x2::AbstractMatrix)
   (_,m) = size(x1)
   (_,n) = size(x2)
-  (d,_) = k.dims
+  (d,_) = k.parent.dims
   Fl = eltype(x1)
   
   loop = Fl(2*pi) .* (-k.parent.truncation_level:1:k.parent.truncation_level) # HACK: only correct for d=1!
