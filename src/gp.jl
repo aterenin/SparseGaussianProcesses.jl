@@ -156,12 +156,11 @@ and 10 inducing points by default.
 """
 function SparseGaussianProcess(k::CovarianceKernel; 
   observation_operator = IdentityOperator(), 
-  inter_domain_operator = IdentityOperator()
+  inter_domain_operator = IdentityOperator(),
+  prior_basis = EuclideanRandomFeatures,
+  inducing_points = MarginalInducingPoints,
+  log_error = zeros(1),
+  hyperprior = (log_error = NormalHyperprior([0.],[1.]),)
   )
-  (id,od) = k.dims
-  pb = EuclideanRandomFeatures(k, 64)
-  db = MarginalInducingPoints(inter_domain_operator*k*inter_domain_operator, 10)
-  le = zeros(1)
-  hp = (log_error = NormalHyperprior([0.],[1.]),)
-  SparseGaussianProcess(k,observation_operator,inter_domain_operator,pb,db,le,hp)
+  SparseGaussianProcess(k,observation_operator,inter_domain_operator,prior_basis(k,64),inducing_points(inter_domain_operator*k*inter_domain_operator, 11),log_error,hyperprior)
 end

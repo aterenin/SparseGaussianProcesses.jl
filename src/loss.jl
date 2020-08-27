@@ -3,7 +3,7 @@ using LinearAlgebra
 export loss
 
 """
-    prior_KL(gp::SparseGaussianProcess{<:Any,<:Any,<:Any, <:Any,
+    prior_KL(gp::SparseGaussianProcess{<:Any,<:Any,<:Any,<:Any,
                                        <:MarginalInducingPoints})
 
 Computes the prior Kullback-Leibler divergence for a Gaussian process with
@@ -26,6 +26,34 @@ function prior_KL(gp::SparseGaussianProcess{<:Any,<:Any,<:Any,<:Any,<:MarginalIn
   logdet_term = 2 .* sum(log.(diag(UQ)) .- log.(diag(U)); dims=1)
   invUQ = inv(UQ)
   trace_term = sum((invUQ * invUQ') .* (U' * U); dims=(1,2))
+  reparameterized_quadratic_form_term = sum(mu .* (Q * mu); dims=1)
+  (logdet_term .- length(mu) .+ trace_term .+ reparameterized_quadratic_form_term) ./ 2
+end
+
+"""
+    prior_KL(gp::SparseGaussianProcess{<:Any,<:Any,<:Any,<:Any,
+                                       <:PseudoDataInducingPoints})
+
+Computes the prior Kullback-Leibler divergence for a Gaussian process with
+pseudo-data inducing points, given by the expression
+
+``KL(q(u) \\mathbin{||} p(u)) = \\frac{1}{2} \\left( 
+                                              \\ln\\frac{|K_{zz} + \\Sigma|}{|\\Sigma|} + 
+                                              tr((K_{zz}+\\Sigma)^{-1}K_{zz}) + 
+                                              \\mu^T K_{zz} \\mu \\right)``
+
+where the mean is re-parameterized according to 
+``\\mu = \\mathbb{E}( (K_{zz} + \\Sigma)^{-1} u )``.
+"""
+function prior_KL(gp::SparseGaussianProcess{<:Any,<:Any,<:Any,<:Any,<:PseudoDataInducingPoints})
+  (k,B) = (gp.kernel, gp.inter_domain_operator)
+  (z,mu,U,V,QC) = gp.inducing_points()
+  K = (B*k*B)(z,z)
+  Q = K + V'*V
+  UQ = QC.U
+  logdet_term = 2 .* sum(log.(diag(UQ)) .- log.(diag(V)); dims=1)
+  invUQ = inv(UQ)
+  trace_term = sum((invUQ * invUQ') .* K; dims=(1,2))
   reparameterized_quadratic_form_term = sum(mu .* (Q * mu); dims=1)
   (logdet_term .- length(mu) .+ trace_term .+ reparameterized_quadratic_form_term) ./ 2
 end

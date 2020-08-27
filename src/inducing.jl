@@ -1,6 +1,6 @@
 using LinearAlgebra
 
-export MarginalInducingPoints
+export MarginalInducingPoints, PseudoDataInducingPoints
 
 """
     InducingPoints
@@ -96,16 +96,19 @@ mutable struct PseudoDataInducingPoints{V<:AbstractVector,M<:AbstractMatrix,C<:C
   cholesky_cache          :: C
 end
 
+Flux.trainable(ip::PseudoDataInducingPoints) = (ip.location, ip.mean, ip.log_covariance_diagonal)
+Flux.@functor PseudoDataInducingPoints
+
 """
     PseudoDataInducingPoints(k::Kernel, dim::Int, num_inducing::Int)
 
 Creates a set of pseudo-data inducing points with unit error variance.
 """
-function PseudoDataInducingPoints(k::Kernel, dim::Int, num_inducing::Int)
+function PseudoDataInducingPoints(k::Kernel, num_inducing::Int)
   (id,od) = k.dims
   location = randn(id, num_inducing)
-  mean = zeros(dim*num_inducing)
-  log_covariance_diagonal = zeros(dim*num_inducing)
+  mean = zeros(od*num_inducing)
+  log_covariance_diagonal = zeros(od*num_inducing)
   weights = zeros(num_inducing,1)
   cholesky_cache = cholesky(k(location,location) .+ Diagonal(exp.(log_covariance_diagonal)))
   PseudoDataInducingPoints(location, mean, log_covariance_diagonal, weights, cholesky_cache)
@@ -137,5 +140,5 @@ variance.
 """
 function (self::PseudoDataInducingPoints)()
   D = Diagonal(exp.(self.log_covariance_diagonal))
-  (self.location, self.mean, nothing, D)
+  (self.location, self.mean, nothing, D, self.cholesky_cache)
 end
